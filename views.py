@@ -1,52 +1,44 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth.models import User
-from django.contrib import auth
+from msilib import init_database
+from django.shortcuts import render ,redirect , get_object_or_404
+from django.utils import timezone
+from .models import Blog
+
 # Create your views here.
-
-# 회원 가입
-def signup(request):
-    # signup 으로 POST 요청이 왔을 때, 새로운 유저를 만드는 절차를 밟는다.
-    if request.method == 'POST':
-        # password와 confirm에 입력된 값이 같다면
-        if request.POST['password'] == request.POST['confirm']:
-            # user 객체를 새로 생성
-            user = User.objects.create_user(username=request.POST['username'], password=request.POST['password'])
-            # 로그인 한다
-            auth.login(request, user)
-            return redirect('/')
-    # signup으로 GET 요청이 왔을 때, 회원가입 화면을 띄워준다.
-    return render(request, 'signup.html')
-
-# 로그인
-def login(request):
-    # login으로 POST 요청이 들어왔을 때, 로그인 절차를 밟는다.
-    if request.method == 'POST':
-        # login.html에서 넘어온 username과 password를 각 변수에 저장한다.
-        username = request.POST['username']
-        password = request.POST['password']
-
-        # 해당 username과 password와 일치하는 user 객체를 가져온다.
-        user = auth.authenticate(request, username=username, password=password)
-        
-        # 해당 user 객체가 존재한다면
-        if user is not None:
-            # 로그인 한다
-            auth.login(request, user)
-            return redirect('/')
-        # 존재하지 않는다면
-        else:
-            # 딕셔너리에 에러메세지를 전달하고 다시 login.html 화면으로 돌아간다.
-            return render(request, 'login.html', {'error' : 'username or password is incorrect.'})
-    # login으로 GET 요청이 들어왔을때, 로그인 화면을 띄워준다.
-    else:
-        return render(request, 'login.html')
-
-# 로그 아웃
-def logout(request):
-    # logout으로 POST 요청이 들어왔을 때, 로그아웃 절차를 밟는다.
-    if request.method == 'POST':
-        auth.logout(request)
-        return redirect('/')
-
-    # logout으로 GET 요청이 들어왔을 때, 로그인 화면을 띄워준다.
-    return render(request, 'login.html')
+def main(request):
+    return render(request, 'main.html')
+def write(request):
+    return render(request, 'write.html')
+def create(request):
+    blog = Blog()
+    blog.title = request.POST['title']
+    blog.pub_date = timezone.now()
+    blog.writer = request.POST['writer']
+    blog.body = request.POST['body']
+    blog.feeling = request.POST['feeling']
+    blog.image = request.FILES.get('image')
+    blog.save()
+    return redirect('read')
+def read(request):
+    blogs = Blog.objects
+    return render(request, 'read.html' , {'blogs' : blogs})
+def detail(request, id):
+    blog = get_object_or_404(Blog, id = id)
+    return render(request , 'detail.html' , {'blog' : blog})
+def edit(request, id):
+    edit_blog = Blog.objects.get(id = id)
+    return render(request, 'edit.html' , {'edit_blog' : edit_blog})
+def update(request, id):
+    update_blog = Blog.objects.get(id = id)
+    update_blog.title = request.POST['title']
+    update_blog.pub_date = timezone.now()
+    update_blog.writer = request.POST['writer']
+    update_blog.body = request.POST['body']
+    update_blog.feeling = request.POST['feeling']
+    update_blog.image = request.FILES.get('image')
+    update_blog.save()
+    return redirect('detail',id)
+def delete(request , id):
+    delete_blog = Blog.objects.get(id=id)
+    delete_blog.delete()
+    return redirect('read')
+    
